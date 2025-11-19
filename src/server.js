@@ -12,6 +12,7 @@ const lessonRoutes = require('./routes/lessons');
 const paymentRoutes = require('./routes/payments');
 const uploadRoutes = require('./routes/uploads');
 const adminRoutes = require('./routes/admin');
+const categoryRoutes = require('./routes/category');
 const { errorHandler } = require('./middlewares/errorHandler');
 
 const app = express();
@@ -33,6 +34,7 @@ app.use('/api/v1/lessons', lessonRoutes);
 app.use('/api/v1/payments', paymentRoutes);
 app.use('/api/v1/uploads', uploadRoutes);
 app.use('/api/v1/admin', adminRoutes);
+app.use('/api/v1/categories', categoryRoutes);
 
 app.use(errorHandler);
 
