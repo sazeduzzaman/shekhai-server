@@ -118,3 +118,21 @@ exports.listWithCourses = async (req, res, next) => {
     next(err);
   }
 };
+
+// Update a category (Admin or Instructor)
+exports.update = async (req, res) => {
+  try {
+    const category = await Category.findById(req.params.id);
+    if (!category) return res.status(404).json({ msg: "Category not found" });
+
+    // Update fields
+    category.name = req.body.name || category.name;
+    category.slug = req.body.slug || category.slug;
+    category.description = req.body.description || category.description;
+
+    await category.save();
+    res.json({ success: true, category });
+  } catch (err) {
+    res.status(500).json({ msg: err.message });
+  }
+};

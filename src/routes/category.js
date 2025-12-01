@@ -11,5 +11,7 @@ router.get("/:id/courses", ctrl.getCoursesByCategory); // NEW: get all courses u
 // Admin only
 router.post("/", auth, permit("admin", "instructor"), ctrl.create);
 router.delete("/:id", auth, permit("admin", "instructor"), ctrl.remove);
+// Update category (Admin or Instructor)
+router.put("/:id", auth, permit("admin", "instructor"), ctrl.update);
 
 module.exports = router;
