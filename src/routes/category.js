@@ -9,7 +9,7 @@ router.get("/:id", ctrl.get);
 router.get("/:id/courses", ctrl.getCoursesByCategory); // NEW: get all courses under this category
 
 // Admin only
-router.post("/", auth, permit("admin"), ctrl.create);
+router.post("/", auth, permit("admin", "instructor"), ctrl.create);
 router.delete("/:id", auth, permit("admin"), ctrl.remove);
 
 module.exports = router;
