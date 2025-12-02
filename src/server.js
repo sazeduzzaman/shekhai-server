@@ -6,7 +6,7 @@ const cors = require('cors');
 const connectDB = require('./config/db');
 
 const authRoutes = require('./routes/auth');
-const userRoutes = require('./routes/users');
+const userRoutes = require("./routes/users");
 const courseRoutes = require('./routes/courses');
 const lessonRoutes = require('./routes/lessons');
 const paymentRoutes = require('./routes/payments');
@@ -28,7 +28,7 @@ connectDB();
 app.get('/', (req,res)=> res.json({ok:true, message:'Shekhai backend scaffold running'}));
 
 app.use('/api/v1/auth', authRoutes);
-app.use('/api/v1/users', userRoutes);
+app.use("/api/v1/users", userRoutes);
 app.use('/api/v1/courses', courseRoutes);
 app.use('/api/v1/lessons', lessonRoutes);
 app.use('/api/v1/payments', paymentRoutes);
