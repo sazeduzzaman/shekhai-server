@@ -37,6 +37,49 @@ router.get("/", auth, permit("admin"), async (req, res) => {
 });
 
 // ---------------------------------------------------
+// PUT /:id - update a user (admin only)
+// ---------------------------------------------------
+router.put("/:id", auth, permit("admin"), async (req, res) => {
+  try {
+    const userId = req.params.id;
+
+    // Validate ObjectId
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ success: false, message: "Invalid user ID" });
+    }
+
+    // Prevent editing self role to non-admin accidentally
+    if (userId === req.user.id && req.body.role && req.body.role !== "admin") {
+      return res
+        .status(400)
+        .json({ success: false, message: "Cannot change your own admin role" });
+    }
+
+    // Only allow certain fields to be updated
+    const allowedFields = ["name", "email", "role", "status"];
+    const updates = {};
+    allowedFields.forEach((field) => {
+      if (req.body[field] !== undefined) updates[field] = req.body[field];
+    });
+
+    const updatedUser = await User.findByIdAndUpdate(userId, updates, {
+      new: true,
+      runValidators: true,
+    }).select("-passwordHash");
+
+    if (!updatedUser) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    res.json({ success: true, message: "User updated successfully", user: updatedUser });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+
+// ---------------------------------------------------
 // DELETE /:id - delete a user (admin only)
 // ---------------------------------------------------
 router.delete("/:id", auth, permit("admin"), async (req, res) => {
@@ -65,23 +108,6 @@ router.delete("/:id", auth, permit("admin"), async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: "Server error" });
-  }
-});
-
-
-
-router.delete("/:id", auth, permit("admin"), async (req, res) => {
-  console.log("DELETE request hit:", req.params.id);
-  try {
-    const deleted = await User.findByIdAndDelete(req.params.id);
-    if (!deleted) {
-      console.log("User not found in DB:", req.params.id);
-      return res.status(404).json({ success: false, message: "User not found" });
-    }
-    res.json({ success: true, message: "User deleted successfully" });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: err.message });
   }
 });
 
