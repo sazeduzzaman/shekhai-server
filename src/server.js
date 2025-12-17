@@ -24,7 +24,12 @@ const app = express();
 // ---------------------------
 // Middleware
 // ---------------------------
-app.use(cors());
+app.use(cors({
+  origin: ["https://shekhai-dashboard.vercel.app"], // allow frontend
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  credentials: true
+}));
+
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan("dev"));
@@ -33,16 +38,16 @@ app.use(morgan("dev"));
 app.use(
   helmet({
     contentSecurityPolicy: {
+      useDefaults: true,
       directives: {
         defaultSrc: ["'self'"],
         imgSrc: [
           "'self'",
           "data:",
           "blob:",
-          "https://shekhai-server.up.railway.app",
-          "https://shekhai-dashboard.vercel.app",
+          "*", // allow all origins for images (or specify your frontend if you want stricter)
         ],
-        scriptSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'"],
         styleSrc: ["'self'", "'unsafe-inline'"],
         connectSrc: ["'self'", "https://shekhai-server.up.railway.app"],
         fontSrc: ["'self'", "https://fonts.gstatic.com"],
@@ -51,7 +56,6 @@ app.use(
     },
   })
 );
-
 
 // ---------------------------
 // Ensure uploads folder exists
