@@ -1,22 +1,18 @@
-const express = require("express");
-const router = express.Router();
-const { auth } = require("../middlewares/auth");
-const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
+const express = require("express");
+const router = express.Router();
+const multer = require("multer");
+const { auth } = require("../middlewares/auth");
 const uploadController = require("../controllers/uploadController");
 
-// Multer storage configuration
+// Save uploads in root /uploads folder (not src)
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    // Dynamically get folder from frontend or default to 'users'
     const folder = req.body.folder || "users";
     const dir = path.join(process.cwd(), "uploads", folder);
 
-    // Automatically create folder if it doesn't exist
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 
     cb(null, dir);
   },
@@ -32,7 +28,6 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-// POST /uploads
 router.post("/", auth, upload.single("file"), uploadController.uploadFile);
 
 module.exports = router;

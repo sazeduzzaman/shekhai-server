@@ -40,7 +40,7 @@ app.use(
           "data:",
           "blob:",
           "https://shekhai-server.up.railway.app",
-          "https://shekhai-dashboard.vercel.app",
+          "http://localhost:5173/",
         ],
         scriptSrc: ["'self'"],
         styleSrc: ["'self'", "'unsafe-inline'"],
@@ -52,11 +52,10 @@ app.use(
   })
 );
 
-
 // ---------------------------
 // Ensure uploads folder exists
 // ---------------------------
-const uploadsDir = path.join(process.cwd(), "uploads");
+const uploadsDir = path.join(process.cwd(), "uploads"); // root/uploads
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
 // Serve static uploads folder
