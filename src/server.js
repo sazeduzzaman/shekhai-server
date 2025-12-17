@@ -15,8 +15,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use(morgan("dev"));
 
 // Serve static files (uploads)
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
-
+// app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 // Connect database
 connectDB();
