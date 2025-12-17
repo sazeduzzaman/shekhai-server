@@ -22,34 +22,29 @@ const categoryRoutes = require("./routes/category");
 const app = express();
 
 // ---------------------------
-// 3️⃣ Serve static uploads with CORS
-// ---------------------------
-app.use(
-  "/uploads",
-  cors(),
-  express.static(path.join(process.cwd(), "uploads"))
-);
-// ---------------------------
-// 3️⃣ Serve static uploads with CORS
-// ---------------------------
-app.use(
-  "/uploads",
-  cors(),
-  express.static(path.join(process.cwd(), "uploads"))
-);
-// ---------------------------
 // Middleware
 // ---------------------------
-// Then apply Helmet to APIs
+app.use(cors());
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true }));
+app.use(morgan("dev"));
+
+// Helmet + CSP
 app.use(
   helmet({
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        imgSrc: ["'self'", "data:", "https://shekhai-server.up.railway.app" , "http://localhost:5173", "https://shekhai-dashboard.vercel.app/"],
+        imgSrc: [
+          "'self'",
+          "data:",
+          "blob:",
+          "https://shekhai-server.up.railway.app",
+          "https://shekhai-dashboard.vercel.app",
+        ],
         scriptSrc: ["'self'"],
         styleSrc: ["'self'", "'unsafe-inline'"],
-        connectSrc: ["'self'"],
+        connectSrc: ["'self'", "https://shekhai-server.up.railway.app"],
         fontSrc: ["'self'", "https://fonts.gstatic.com"],
         objectSrc: ["'none'"],
       },
@@ -57,12 +52,15 @@ app.use(
   })
 );
 
+
 // ---------------------------
 // Ensure uploads folder exists
 // ---------------------------
 const uploadsDir = path.join(process.cwd(), "uploads"); // root/uploads
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
+// Serve static uploads folder
+app.use("/uploads", express.static(uploadsDir));
 
 // ---------------------------
 // Connect database
