@@ -117,8 +117,8 @@ exports.update = async (req, res, next) => {
     }
 
     // ✅ Update bannerUrl and thumbnails
-    if (req.body.bannerUrl !== undefined) course.bannerUrl = req.body.bannerUrl;
-    if (req.body.thumbnails !== undefined) course.thumbnails = req.body.thumbnails;
+if (req.body.bannerUrl !== undefined) course.bannerUrl = req.body.bannerUrl;
+if (req.body.thumbnails !== undefined) course.thumbnails = req.body.thumbnails;
 
     course.updatedAt = new Date();
     await course.save();

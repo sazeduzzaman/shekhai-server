@@ -4,35 +4,32 @@ const morgan = require("morgan");
 const helmet = require("helmet");
 const cors = require("cors");
 const path = require("path");
+const fs = require("fs");
+
 const connectDB = require("./config/db");
 const { errorHandler } = require("./middlewares/errorHandler");
+
+// Routes
+const authRoutes = require("./routes/auth");
+const userRoutes = require("./routes/users");
+const courseRoutes = require("./routes/courses");
+const lessonRoutes = require("./routes/lessons");
+const paymentRoutes = require("./routes/payments");
+const uploadRoutes = require("./routes/uploads");
+const adminRoutes = require("./routes/admin");
+const categoryRoutes = require("./routes/category");
 
 const app = express();
 
 // ---------------------------
-// 1️⃣ CORS for frontend + static files
+// Middleware
 // ---------------------------
-// Allow your frontend apps to access the API and static uploads
-const allowedOrigins = [
-  "http://localhost:5173",                 // React dev server
-  "https://shekhai-dashboard.vercel.app", // Production frontend
-];
+app.use(cors());
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true }));
+app.use(morgan("dev"));
 
-app.use(cors({
-  origin: allowedOrigins,
-  credentials: true,
-}));
-
-// ---------------------------
-// 2️⃣ Serve static uploads
-// ---------------------------
-// Users: /uploads/users/...
-// Courses: /uploads/courses/...
-app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
-
-// ---------------------------
-// 3️⃣ Helmet with CSP
-// ---------------------------
+// Helmet + CSP
 app.use(
   helmet({
     contentSecurityPolicy: {
@@ -42,8 +39,7 @@ app.use(
           "'self'",
           "data:",
           "https://shekhai-server.up.railway.app",
-          "http://localhost:5173",
-          "https://shekhai-dashboard.vercel.app"
+          "https://shekhai-dashboard.vercel.app",
         ],
         scriptSrc: ["'self'"],
         styleSrc: ["'self'", "'unsafe-inline'"],
@@ -56,31 +52,21 @@ app.use(
 );
 
 // ---------------------------
-// 4️⃣ Other middleware
+// Ensure uploads folder exists
 // ---------------------------
-app.use(express.json({ limit: "10mb" }));
-app.use(express.urlencoded({ extended: true }));
-app.use(morgan("dev"));
+const uploadsDir = path.join(process.cwd(), "uploads");
+if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+
+// Serve static uploads folder
+app.use("/uploads", express.static(uploadsDir));
 
 // ---------------------------
-// 5️⃣ Connect database
+// Connect database
 // ---------------------------
 connectDB();
 
 // ---------------------------
-// 6️⃣ Import routes
-// ---------------------------
-const authRoutes = require("./routes/auth");
-const userRoutes = require("./routes/users");
-const courseRoutes = require("./routes/courses");
-const lessonRoutes = require("./routes/lessons");
-const paymentRoutes = require("./routes/payments");
-const uploadRoutes = require("./routes/uploads");
-const adminRoutes = require("./routes/admin");
-const categoryRoutes = require("./routes/category");
-
-// ---------------------------
-// 7️⃣ Routes
+// Routes
 // ---------------------------
 app.get("/", (req, res) =>
   res.json({ ok: true, message: "Shekhai backend running" })
@@ -96,14 +82,12 @@ app.use("/api/v1/admin", adminRoutes);
 app.use("/api/v1/categories", categoryRoutes);
 
 // ---------------------------
-// 8️⃣ Error handling middleware
+// Error handling middleware
 // ---------------------------
 app.use(errorHandler);
 
 // ---------------------------
-// 9️⃣ Start server
+// Start server
 // ---------------------------
 const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
