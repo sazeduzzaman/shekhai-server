@@ -38,18 +38,20 @@ app.use(
         imgSrc: [
           "'self'",
           "data:",
+          "blob:",
           "https://shekhai-server.up.railway.app",
           "https://shekhai-dashboard.vercel.app",
         ],
         scriptSrc: ["'self'"],
         styleSrc: ["'self'", "'unsafe-inline'"],
-        connectSrc: ["'self'"],
+        connectSrc: ["'self'", "https://shekhai-server.up.railway.app"],
         fontSrc: ["'self'", "https://fonts.gstatic.com"],
         objectSrc: ["'none'"],
       },
     },
   })
 );
+
 
 // ---------------------------
 // Ensure uploads folder exists
