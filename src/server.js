@@ -49,9 +49,10 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-app.use(express.json({ limit: "10mb" }));
-app.use(express.urlencoded({ extended: true }));
-app.use(morgan("dev"));
+// Increase limits for file uploads
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ extended: true, limit: "50mb" }));
+app.use(morgan(':method :url :status :res[content-length] - :response-time ms'));
 
 // ---------------------------
 // Helmet + CSP Configuration
@@ -66,25 +67,33 @@ app.use(
           "'self'",
           "data:",
           "blob:",
-          "http://localhost:5173",
-          "https://shekhai-dashboard.vercel.app",
-          "https://shekhai-server.up.railway.app",
+          ...allowedOrigins,
         ],
         scriptSrc: ["'self'", "'unsafe-inline'"],
         styleSrc: ["'self'", "'unsafe-inline'"],
-        connectSrc: [
-          "'self'",
-          "http://localhost:5173",
-          "https://shekhai-dashboard.vercel.app",
-          "https://shekhai-server.up.railway.app",
-        ],
+        connectSrc: ["'self'", ...allowedOrigins],
         fontSrc: ["'self'", "https://fonts.gstatic.com"],
         objectSrc: ["'none'"],
       },
     },
-    crossOriginResourcePolicy: { policy: "cross-origin" } // Important for images
+    crossOriginResourcePolicy: { policy: "cross-origin" }
   })
 );
+
+// ---------------------------
+// Additional Security Headers
+// ---------------------------
+app.use((req, res, next) => {
+  res.removeHeader('X-Powered-By');
+  res.set({
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'DENY',
+    'X-XSS-Protection': '1; mode=block',
+    'Referrer-Policy': 'strict-origin-when-cross-origin',
+    'Permissions-Policy': 'camera=(), microphone=(), geolocation=()'
+  });
+  next();
+});
 
 // ---------------------------
 // Static Files with CORS Headers
@@ -92,19 +101,42 @@ app.use(
 const uploadsDir = path.join(process.cwd(), "uploads");
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
-// Custom static middleware for uploads with CORS headers
-app.use("/uploads", (req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "https://shekhai-dashboard.vercel.app");
-  res.header("Access-Control-Allow-Methods", "GET, OPTIONS");
-  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  res.header("Access-Control-Allow-Credentials", "true");
-  
-  // Handle OPTIONS preflight requests
-  if (req.method === "OPTIONS") {
-    return res.status(200).end();
+// Static files with proper CORS headers
+const staticOptions = {
+  setHeaders: (res, filePath, stat) => {
+    res.set({
+      'Access-Control-Allow-Origin': 'https://shekhai-dashboard.vercel.app',
+      'Access-Control-Allow-Methods': 'GET, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Allow-Credentials': 'true',
+      'Cross-Origin-Resource-Policy': 'cross-origin'
+    });
   }
-  
-  express.static(uploadsDir)(req, res, next);
+};
+
+app.use("/uploads", express.static(uploadsDir, staticOptions));
+
+// Handle OPTIONS for static files
+app.options("/uploads/*", (req, res) => {
+  res.set({
+    'Access-Control-Allow-Origin': 'https://shekhai-dashboard.vercel.app',
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Allow-Credentials': 'true',
+    'Access-Control-Max-Age': '86400'
+  });
+  res.status(200).end();
+});
+
+// ---------------------------
+// Health Check Endpoint
+// ---------------------------
+app.get("/health", (req, res) => {
+  res.status(200).json({
+    status: "healthy",
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  });
 });
 
 // ---------------------------
@@ -116,7 +148,12 @@ connectDB();
 // Routes
 // ---------------------------
 app.get("/", (req, res) =>
-  res.json({ ok: true, message: "Shekhai backend running" })
+  res.json({ 
+    ok: true, 
+    message: "Shekhai backend running",
+    version: "1.0.0",
+    docs: "https://github.com/yourusername/shekhai"
+  })
 );
 
 app.use("/api/v1/auth", authRoutes);
@@ -129,12 +166,36 @@ app.use("/api/v1/admin", adminRoutes);
 app.use("/api/v1/categories", categoryRoutes);
 
 // ---------------------------
+// 404 Handler
+// ---------------------------
+app.use((req, res, next) => {
+  res.status(404).json({
+    success: false,
+    message: `Route ${req.originalUrl} not found`
+  });
+});
+
+// ---------------------------
 // Error handling middleware
 // ---------------------------
 app.use(errorHandler);
 
 // ---------------------------
+// Graceful Shutdown
+// ---------------------------
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received. Shutting down gracefully...');
+  server.close(() => {
+    console.log('Process terminated');
+  });
+});
+
+// ---------------------------
 // Start server
 // ---------------------------
 const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+const server = app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`📁 Uploads directory: ${uploadsDir}`);
+});

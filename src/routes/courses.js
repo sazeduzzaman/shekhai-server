@@ -8,10 +8,16 @@ router.get("/", coursesCtrl.list);
 
 // Anyone can view a single published course
 router.get("/:id", coursesCtrl.get);
+
 // PROTECTED ROUTES (Instructor & Admin)
 
-// Create course
-router.post("/", auth, permit("instructor", "admin"), coursesCtrl.create);
+// Create course (with file upload middleware)
+router.post("/", 
+  auth, 
+  permit("instructor", "admin"), 
+  coursesCtrl.uploadCourseImages,  // Add this middleware
+  coursesCtrl.create
+);
 
 // Update course
 router.put("/:id", auth, permit("instructor", "admin"), coursesCtrl.update);
