@@ -10,25 +10,28 @@ const { errorHandler } = require("./middlewares/errorHandler");
 const app = express();
 
 // ---------------------------
+// 3️⃣ Serve static uploads with CORS
+// ---------------------------
+app.use(
+  "/uploads",
+  cors(),
+  express.static(path.join(process.cwd(), "uploads"))
+);
+// ---------------------------
 // 1️⃣ Helmet + Content Security Policy
 // ---------------------------
+// Then apply Helmet to APIs
 app.use(
   helmet({
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
+        imgSrc: ["'self'", "data:", "https://shekhai-server.up.railway.app"],
         scriptSrc: ["'self'"],
         styleSrc: ["'self'", "'unsafe-inline'"],
-        imgSrc: [
-          "'self'",
-          "data:",
-          "https://shekhai-server.up.railway.app", // allow uploaded images
-        ],
         connectSrc: ["'self'"],
         fontSrc: ["'self'", "https://fonts.gstatic.com"],
         objectSrc: ["'none'"],
-        frameAncestors: ["'none'"],
-        upgradeInsecureRequests: [],
       },
     },
   })
@@ -42,14 +45,6 @@ app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan("dev"));
 
-// ---------------------------
-// 3️⃣ Serve static uploads with CORS
-// ---------------------------
-app.use(
-  "/uploads",
-  cors({ origin: "*" }), // allow cross-origin requests for images
-  express.static(path.join(process.cwd(), "uploads"))
-);
 
 // ---------------------------
 // 4️⃣ Connect database
