@@ -25,17 +25,13 @@ const app = express();
 // Middleware
 // ---------------------------
 
-// CORS configuration
+// CORS
 const corsOptions = {
-  origin: [
-    "http://localhost:5173", // local frontend
-    "https://shekhai-dashboard.vercel.app", // deployed frontend
-  ],
+  origin: ["http://localhost:5173", "https://shekhai-dashboard.vercel.app"],
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,
 };
-
 app.use(cors(corsOptions));
 
 app.use(express.json({ limit: "10mb" }));
@@ -53,17 +49,17 @@ app.use(
           "'self'",
           "data:",
           "blob:",
-          "http://localhost:5173", // allow local dev
-          "https://shekhai-dashboard.vercel.app", // allow deployed frontend
-          "https://shekhai-server.up.railway.app" // allow own server
+          "http://localhost:5173",
+          "https://shekhai-dashboard.vercel.app",
+          "https://shekhai-server.up.railway.app",
         ],
         scriptSrc: ["'self'", "'unsafe-inline'"],
         styleSrc: ["'self'", "'unsafe-inline'"],
         connectSrc: [
           "'self'",
-          "https://shekhai-server.up.railway.app",
           "http://localhost:5173",
-          "https://shekhai-dashboard.vercel.app"
+          "https://shekhai-dashboard.vercel.app",
+          "https://shekhai-server.up.railway.app",
         ],
         fontSrc: ["'self'", "https://fonts.gstatic.com"],
         objectSrc: ["'none'"],
@@ -72,11 +68,10 @@ app.use(
   })
 );
 
-
 // ---------------------------
 // Ensure uploads folder exists
 // ---------------------------
-const uploadsDir = path.join(process.cwd(), "uploads"); // root/uploads
+const uploadsDir = path.join(process.cwd(), "uploads");
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
 // Serve static uploads folder
