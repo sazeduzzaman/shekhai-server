@@ -4,12 +4,11 @@ const express = require("express");
 const router = express.Router();
 const multer = require("multer");
 const { auth } = require("../middlewares/auth");
-const uploadController = require("../controllers/uploadController");
+const { uploadFile } = require("../controllers/uploadController");
 
-// Save uploads in root /uploads folder
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const folder = req.body.folder || "common";
+    const folder = req.body.folder || "users";
     const dir = path.join(process.cwd(), "uploads", folder);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
     cb(null, dir);
@@ -26,7 +25,6 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-// POST /api/v1/uploads
-router.post("/", auth, upload.single("file"), uploadController.uploadFile);
+router.post("/", auth, upload.single("file"), uploadFile);
 
 module.exports = router;
