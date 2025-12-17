@@ -9,7 +9,8 @@ const uploadController = require("../controllers/uploadController");
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const folder = req.body.folder || "users";
-    const dir = path.join(__dirname, "..", "uploads", folder);
+    const dir = path.join(process.cwd(), "uploads", folder);
+
     fs.mkdirSync(dir, { recursive: true });
     cb(null, dir);
   },
