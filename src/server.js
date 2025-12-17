@@ -10,23 +10,41 @@ const { errorHandler } = require("./middlewares/errorHandler");
 const app = express();
 
 // ---------------------------
-// 3️⃣ Serve static uploads with CORS
+// 1️⃣ CORS for frontend + static files
 // ---------------------------
-app.use(
-  "/uploads",
-  cors(),
-  express.static(path.join(process.cwd(), "uploads"))
-);
+// Allow your frontend apps to access the API and static uploads
+const allowedOrigins = [
+  "http://localhost:5173",                 // React dev server
+  "https://shekhai-dashboard.vercel.app", // Production frontend
+];
+
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true,
+}));
+
 // ---------------------------
-// 1️⃣ Helmet + Content Security Policy
+// 2️⃣ Serve static uploads
 // ---------------------------
-// Then apply Helmet to APIs
+// Users: /uploads/users/...
+// Courses: /uploads/courses/...
+app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
+
+// ---------------------------
+// 3️⃣ Helmet with CSP
+// ---------------------------
 app.use(
   helmet({
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        imgSrc: ["'self'", "data:", "https://shekhai-server.up.railway.app" , "http://localhost:5173", "https://shekhai-dashboard.vercel.app/"],
+        imgSrc: [
+          "'self'",
+          "data:",
+          "https://shekhai-server.up.railway.app",
+          "http://localhost:5173",
+          "https://shekhai-dashboard.vercel.app"
+        ],
         scriptSrc: ["'self'"],
         styleSrc: ["'self'", "'unsafe-inline'"],
         connectSrc: ["'self'"],
@@ -38,21 +56,19 @@ app.use(
 );
 
 // ---------------------------
-// 2️⃣ Other middleware
+// 4️⃣ Other middleware
 // ---------------------------
-app.use(cors());
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan("dev"));
 
-
 // ---------------------------
-// 4️⃣ Connect database
+// 5️⃣ Connect database
 // ---------------------------
 connectDB();
 
 // ---------------------------
-// 5️⃣ Import routes
+// 6️⃣ Import routes
 // ---------------------------
 const authRoutes = require("./routes/auth");
 const userRoutes = require("./routes/users");
@@ -64,7 +80,7 @@ const adminRoutes = require("./routes/admin");
 const categoryRoutes = require("./routes/category");
 
 // ---------------------------
-// 6️⃣ Routes
+// 7️⃣ Routes
 // ---------------------------
 app.get("/", (req, res) =>
   res.json({ ok: true, message: "Shekhai backend running" })
@@ -80,12 +96,12 @@ app.use("/api/v1/admin", adminRoutes);
 app.use("/api/v1/categories", categoryRoutes);
 
 // ---------------------------
-// 7️⃣ Error handling middleware
+// 8️⃣ Error handling middleware
 // ---------------------------
 app.use(errorHandler);
 
 // ---------------------------
-// 8️⃣ Start server
+// 9️⃣ Start server
 // ---------------------------
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
