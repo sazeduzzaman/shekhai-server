@@ -1,3 +1,4 @@
+// uploadController.js - Update this
 exports.uploadFile = (req, res) => {
   if (!req.file)
     return res
@@ -5,13 +6,17 @@ exports.uploadFile = (req, res) => {
       .json({ success: false, message: "No file uploaded" });
 
   const folder = req.body.folder || "users";
-  const fileUrl = `${req.protocol}://${req.get("host")}/uploads/${folder}/${
-    req.file.filename
-  }`;
+  
+  // Get protocol based on environment
+  const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+  const host = req.get("host");
+  
+  // Construct the URL
+  const fileUrl = `${protocol}://${host}/uploads/${folder}/${req.file.filename}`;
 
   res.json({
     success: true,
     message: "File uploaded successfully",
-    fileUrl,
+    fileUrl, // This should be https://shekhai-server.up.railway.app/uploads/users/filename.jpg
   });
 };

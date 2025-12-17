@@ -1,0 +1,13 @@
+{
+  "build": {
+    "builder": "NIXPACKS"
+  },
+  "deploy": {
+    "volumes": [
+      {
+        "mountPath": "/app/uploads",
+        "name": "uploads"
+      }
+    ]
+  }
+}

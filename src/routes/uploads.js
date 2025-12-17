@@ -10,6 +10,7 @@ const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const folder = req.body.folder || "users";
     const dir = path.join(process.cwd(), "uploads", folder);
+    console.log(`Upload destination: ${dir}`); // Add this line
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
     cb(null, dir);
   },
