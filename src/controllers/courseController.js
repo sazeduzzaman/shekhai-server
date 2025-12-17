@@ -55,43 +55,34 @@ exports.create = async (req, res, next) => {
   try {
     const payload = req.body;
 
-    // If instructor, assign themselves
-    if (req.user.role === "instructor") {
-      payload.instructor = req.user.id;
-    }
+    if (req.user.role === "instructor") payload.instructor = req.user.id;
 
-    // If admin, they must provide an instructor
-    if (req.user.role === "admin") {
-      if (!payload.instructor) {
-        return res
-          .status(400)
-          .json({ msg: "Admin must provide an instructor ID" });
-      }
-    }
+    if (req.user.role === "admin" && !payload.instructor)
+      return res
+        .status(400)
+        .json({ msg: "Admin must provide an instructor ID" });
 
-    // If category is sent as ID, validate it
-    if (payload.category) {
-      const cat = await Category.findById(payload.category);
-      if (!cat) return res.status(400).json({ msg: "Category not found" });
-    } else {
+    if (!payload.category)
       return res.status(400).json({ msg: "Category is required" });
-    }
 
-    // Calculate total modules & duration
+    const cat = await Category.findById(payload.category);
+    if (!cat) return res.status(400).json({ msg: "Category not found" });
+
     payload.totalModules = payload.modules ? payload.modules.length : 0;
     payload.totalDuration = payload.modules
       ? payload.modules.reduce((sum, m) => sum + (m.duration || 0), 0)
       : 0;
 
-    // Create course
+    // ✅ Add bannerUrl and thumbnails if present
+    if (payload.bannerUrl) payload.bannerUrl = payload.bannerUrl;
+    if (payload.thumbnails) payload.thumbnails = payload.thumbnails;
+
     const createdCourse = await Course.create(payload);
 
-    // Re-query to populate instructor & category
     const courseWithPopulate = await Course.findById(createdCourse._id)
       .populate("instructor", "name email role")
       .populate("category", "name slug description");
 
-    // Return response with category as array
     res.status(201).json({
       success: true,
       course: {
@@ -107,18 +98,15 @@ exports.create = async (req, res, next) => {
   }
 };
 
-// Update course (instructor owns course or admin)
+// Update course
+// Update course
 exports.update = async (req, res, next) => {
   try {
     const course = await Course.findById(req.params.id);
     if (!course) return res.status(404).json({ msg: "Not found" });
 
-    if (
-      req.user.role !== "admin" &&
-      course.instructor.toString() !== req.user.id
-    ) {
+    if (req.user.role !== "admin" && course.instructor.toString() !== req.user.id)
       return res.status(403).json({ msg: "Forbidden" });
-    }
 
     Object.assign(course, req.body);
 
@@ -129,6 +117,10 @@ exports.update = async (req, res, next) => {
         0
       );
     }
+
+    // ✅ Update bannerUrl and thumbnails
+    if (req.body.bannerUrl !== undefined) course.bannerUrl = req.body.bannerUrl;
+    if (req.body.thumbnails !== undefined) course.thumbnails = req.body.thumbnails;
 
     course.updatedAt = new Date();
     await course.save();

@@ -36,8 +36,11 @@ const courseSchema = new mongoose.Schema(
     enrollmentDeadline: { type: Date },
     published: { type: Boolean, default: false },
     purchasedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+    // ✅ New fields
+    bannerUrl: { type: String },
+    thumbnails: [{ type: String }],
   },
-  { timestamps: true }
+  { timestamps: true }, 
 );
 
 module.exports = mongoose.model("Course", courseSchema);
