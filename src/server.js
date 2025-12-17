@@ -26,7 +26,7 @@ app.use(
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        imgSrc: ["'self'", "data:", "https://shekhai-server.up.railway.app"],
+        imgSrc: ["'self'", "data:", "https://shekhai-server.up.railway.app" , "http://localhost:3000", "https://shekhai-dashboard.vercel.app/"],
         scriptSrc: ["'self'"],
         styleSrc: ["'self'", "'unsafe-inline'"],
         connectSrc: ["'self'"],

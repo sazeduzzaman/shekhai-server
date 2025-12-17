@@ -97,8 +97,6 @@ exports.create = async (req, res, next) => {
     next(err);
   }
 };
-
-// Update course
 // Update course
 exports.update = async (req, res, next) => {
   try {
