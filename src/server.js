@@ -5,11 +5,13 @@ const helmet = require("helmet");
 const cors = require("cors");
 const path = require("path");
 const fs = require("fs");
+const compression = require("compression");
 
 const connectDB = require("./config/db");
 const { errorHandler } = require("./middlewares/errorHandler");
 
 // Routes
+const communityRoutes = require("./routes/communityRoutes");
 const authRoutes = require("./routes/auth");
 const userRoutes = require("./routes/users");
 const courseRoutes = require("./routes/courses");
@@ -22,19 +24,24 @@ const categoryRoutes = require("./routes/category");
 const app = express();
 
 // ---------------------------
+// Compression for better performance
+// ---------------------------
+app.use(compression());
+
+// ---------------------------
 // CORS Configuration
 // ---------------------------
 const allowedOrigins = [
-  "http://localhost:5173", 
+  "http://localhost:5173",
   "https://shekhai-dashboard.vercel.app",
-  "https://shekhai-server.up.railway.app"
+  "https://shekhai-server.up.railway.app",
 ];
 
 const corsOptions = {
   origin: function (origin, callback) {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
-    
+
     if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
@@ -42,17 +49,33 @@ const corsOptions = {
     }
   },
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"],
-  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "X-Requested-With",
+    "Accept",
+    "Origin",
+  ],
   credentials: true,
-  optionsSuccessStatus: 200
+  optionsSuccessStatus: 200,
 };
 
 app.use(cors(corsOptions));
 
-// Increase limits for file uploads
+// ---------------------------
+// Body parsing with increased limits for file uploads
+// ---------------------------
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
-app.use(morgan(':method :url :status :res[content-length] - :response-time ms'));
+
+// ---------------------------
+// Logging
+// ---------------------------
+app.use(
+  morgan(
+    ':date[iso] :remote-addr ":method :url HTTP/:http-version" :status :res[content-length] ":referrer" ":user-agent" - :response-time ms'
+  )
+);
 
 // ---------------------------
 // Helmet + CSP Configuration
@@ -63,12 +86,7 @@ app.use(
       useDefaults: true,
       directives: {
         defaultSrc: ["'self'"],
-        imgSrc: [
-          "'self'",
-          "data:",
-          "blob:",
-          ...allowedOrigins,
-        ],
+        imgSrc: ["'self'", "data:", "blob:", ...allowedOrigins],
         scriptSrc: ["'self'", "'unsafe-inline'"],
         styleSrc: ["'self'", "'unsafe-inline'"],
         connectSrc: ["'self'", ...allowedOrigins],
@@ -76,7 +94,7 @@ app.use(
         objectSrc: ["'none'"],
       },
     },
-    crossOriginResourcePolicy: { policy: "cross-origin" }
+    crossOriginResourcePolicy: { policy: "cross-origin" },
   })
 );
 
@@ -84,13 +102,13 @@ app.use(
 // Additional Security Headers
 // ---------------------------
 app.use((req, res, next) => {
-  res.removeHeader('X-Powered-By');
+  res.removeHeader("X-Powered-By");
   res.set({
-    'X-Content-Type-Options': 'nosniff',
-    'X-Frame-Options': 'DENY',
-    'X-XSS-Protection': '1; mode=block',
-    'Referrer-Policy': 'strict-origin-when-cross-origin',
-    'Permissions-Policy': 'camera=(), microphone=(), geolocation=()'
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "X-XSS-Protection": "1; mode=block",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
   });
   next();
 });
@@ -99,32 +117,49 @@ app.use((req, res, next) => {
 // Static Files with CORS Headers
 // ---------------------------
 const uploadsDir = path.join(process.cwd(), "uploads");
-if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+const communityUploadsDir = path.join(uploadsDir, "community");
 
-// Static files with proper CORS headers
+// Create directories if they don't exist
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+if (!fs.existsSync(communityUploadsDir)) {
+  fs.mkdirSync(communityUploadsDir, { recursive: true });
+}
+
+// Static files configuration
 const staticOptions = {
-  setHeaders: (res, filePath, stat) => {
-    res.set({
-      'Access-Control-Allow-Origin': 'https://shekhai-dashboard.vercel.app',
-      'Access-Control-Allow-Methods': 'GET, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-      'Access-Control-Allow-Credentials': 'true',
-      'Cross-Origin-Resource-Policy': 'cross-origin'
-    });
-  }
+  setHeaders: (res, filePath) => {
+    // Allow all allowed origins for static files
+    const requestOrigin = req.headers.origin;
+    if (allowedOrigins.includes(requestOrigin)) {
+      res.setHeader("Access-Control-Allow-Origin", requestOrigin);
+    }
+    res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+    res.setHeader(
+      "Access-Control-Allow-Headers",
+      "Content-Type, Authorization"
+    );
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+    res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+  },
 };
 
-app.use("/uploads", express.static(uploadsDir, staticOptions));
+// Apply static middleware to uploads directory
+app.use("/uploads", (req, res, next) => {
+  express.static(uploadsDir, staticOptions)(req, res, next);
+});
 
 // Handle OPTIONS for static files
 app.options("/uploads/*", (req, res) => {
-  res.set({
-    'Access-Control-Allow-Origin': 'https://shekhai-dashboard.vercel.app',
-    'Access-Control-Allow-Methods': 'GET, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    'Access-Control-Allow-Credentials': 'true',
-    'Access-Control-Max-Age': '86400'
-  });
+  const requestOrigin = req.headers.origin;
+  if (allowedOrigins.includes(requestOrigin)) {
+    res.setHeader("Access-Control-Allow-Origin", requestOrigin);
+  }
+  res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.setHeader("Access-Control-Allow-Credentials", "true");
+  res.setHeader("Access-Control-Max-Age", "86400");
   res.status(200).end();
 });
 
@@ -135,7 +170,8 @@ app.get("/health", (req, res) => {
   res.status(200).json({
     status: "healthy",
     timestamp: new Date().toISOString(),
-    uptime: process.uptime()
+    uptime: process.uptime(),
+    memory: process.memoryUsage(),
   });
 });
 
@@ -145,17 +181,46 @@ app.get("/health", (req, res) => {
 connectDB();
 
 // ---------------------------
+// API Documentation endpoint
+// ---------------------------
+app.get("/api-docs", (req, res) => {
+  res.json({
+    message: "API Documentation",
+    endpoints: {
+      auth: "/api/v1/auth",
+      users: "/api/v1/users",
+      courses: "/api/v1/courses",
+      lessons: "/api/v1/lessons",
+      payments: "/api/v1/payments",
+      uploads: "/api/v1/uploads",
+      admin: "/api/v1/admin",
+      categories: "/api/v1/categories",
+      community: "/api/v1/community",
+    },
+    community_endpoints: {
+      "GET /questions": "Get all questions",
+      "GET /questions/:id": "Get single question with answers",
+      "POST /questions": "Create new question (with images)",
+      "POST /questions/:id/answers": "Add answer to question (with images)",
+      "GET /stats": "Get community statistics",
+    },
+  });
+});
+
+// ---------------------------
 // Routes
 // ---------------------------
 app.get("/", (req, res) =>
-  res.json({ 
-    ok: true, 
-    message: "Shekhai backend running",
+  res.json({
+    ok: true,
+    message: "Shekhai LMS Backend API",
     version: "1.0.0",
-    docs: "https://github.com/yourusername/shekhai"
+    documentation: "/api-docs",
+    health: "/health",
   })
 );
 
+// API Routes
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/courses", courseRoutes);
@@ -164,14 +229,16 @@ app.use("/api/v1/payments", paymentRoutes);
 app.use("/api/v1/uploads", uploadRoutes);
 app.use("/api/v1/admin", adminRoutes);
 app.use("/api/v1/categories", categoryRoutes);
+app.use("/api/v1/community", communityRoutes);
 
 // ---------------------------
 // 404 Handler
 // ---------------------------
-app.use((req, res, next) => {
+app.use((req, res) => {
   res.status(404).json({
     success: false,
-    message: `Route ${req.originalUrl} not found`
+    message: `Route ${req.originalUrl} not found`,
+    availableRoutes: "/api-docs",
   });
 });
 
@@ -181,12 +248,21 @@ app.use((req, res, next) => {
 app.use(errorHandler);
 
 // ---------------------------
+// Unhandled rejection handler
+// ---------------------------
+process.on("unhandledRejection", (err) => {
+  console.error("Unhandled Rejection:", err);
+  // Don't crash the server, just log
+});
+
+// ---------------------------
 // Graceful Shutdown
 // ---------------------------
-process.on('SIGTERM', () => {
-  console.log('SIGTERM received. Shutting down gracefully...');
+process.on("SIGTERM", () => {
+  console.log("SIGTERM received. Shutting down gracefully...");
   server.close(() => {
-    console.log('Process terminated');
+    console.log("Process terminated");
+    process.exit(0);
   });
 });
 
@@ -196,6 +272,9 @@ process.on('SIGTERM', () => {
 const PORT = process.env.PORT || 8080;
 const server = app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🌍 Environment: ${process.env.NODE_ENV || "development"}`);
   console.log(`📁 Uploads directory: ${uploadsDir}`);
+  console.log(`🔗 Community uploads: ${communityUploadsDir}`);
+  console.log(`📚 API Documentation: http://localhost:${PORT}/api-docs`);
+  console.log(`❤️  Health check: http://localhost:${PORT}/health`);
 });
