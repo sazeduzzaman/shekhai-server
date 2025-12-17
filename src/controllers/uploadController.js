@@ -1,35 +1,19 @@
-const express = require("express");
-const router = express.Router();
-const { auth } = require("../middlewares/auth");
-const multer = require("multer");
-const path = require("path");
-const fs = require("fs");
-const uploadController = require("../controllers/uploadController");
+exports.uploadFile = (req, res) => {
+  if (!req.file) {
+    return res
+      .status(400)
+      .json({ success: false, message: "No file uploaded" });
+  }
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const folder = req.body.folder || "users"; // dynamically use folder
-    const dir = path.join(process.cwd(), "uploads", folder);
+  // Get folder from request body or default to 'users'
+  const folder = req.body.folder || "users";
 
-    // Create folder if not exists
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
+  // Construct accessible URL
+  const fileUrl = `${req.protocol}://${req.get("host")}/uploads/${folder}/${req.file.filename}`;
 
-    cb(null, dir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueName =
-      Date.now() +
-      "-" +
-      Math.round(Math.random() * 1e9) +
-      path.extname(file.originalname);
-    cb(null, uniqueName);
-  },
-});
-
-const upload = multer({ storage });
-
-router.post("/", auth, upload.single("file"), uploadController.uploadFile);
-
-module.exports = router;
+  res.json({
+    success: true,
+    message: "File uploaded successfully",
+    fileUrl,
+  });
+};

@@ -6,14 +6,14 @@ const path = require("path");
 const fs = require("fs");
 const uploadController = require("../controllers/uploadController");
 
-// Configure multer storage
+// Multer storage configuration
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    // Use folder from frontend or default to 'users'
+    // Dynamically get folder from frontend or default to 'users'
     const folder = req.body.folder || "users";
     const dir = path.join(process.cwd(), "uploads", folder);
 
-    // Create folder if it doesn't exist
+    // Automatically create folder if it doesn't exist
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
@@ -32,7 +32,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-// Upload endpoint
+// POST /uploads
 router.post("/", auth, upload.single("file"), uploadController.uploadFile);
 
 module.exports = router;
