@@ -53,9 +53,9 @@ app.use(
           "'self'",
           "data:",
           "blob:",
-          "https://shekhai-server.up.railway.app", // allow your server
-          "http://localhost:5173", // allow local frontend
+          "http://localhost:5173", // allow local dev
           "https://shekhai-dashboard.vercel.app", // allow deployed frontend
+          "https://shekhai-server.up.railway.app" // allow own server
         ],
         scriptSrc: ["'self'", "'unsafe-inline'"],
         styleSrc: ["'self'", "'unsafe-inline'"],
@@ -63,7 +63,7 @@ app.use(
           "'self'",
           "https://shekhai-server.up.railway.app",
           "http://localhost:5173",
-          "https://shekhai-dashboard.vercel.app",
+          "https://shekhai-dashboard.vercel.app"
         ],
         fontSrc: ["'self'", "https://fonts.gstatic.com"],
         objectSrc: ["'none'"],
@@ -71,6 +71,7 @@ app.use(
     },
   })
 );
+
 
 // ---------------------------
 // Ensure uploads folder exists
