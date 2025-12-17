@@ -6,13 +6,12 @@ const multer = require("multer");
 const { auth } = require("../middlewares/auth");
 const uploadController = require("../controllers/uploadController");
 
-// Save uploads in root /uploads folder (not src)
+// Save uploads in root /uploads folder
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const folder = req.body.folder || "users"; // default folder 'users'
     const dir = path.join(process.cwd(), "uploads", folder);
 
-    // Ensure folder exists
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 
     cb(null, dir);

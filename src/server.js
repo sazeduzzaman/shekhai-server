@@ -24,11 +24,19 @@ const app = express();
 // ---------------------------
 // Middleware
 // ---------------------------
-app.use(cors({
-  origin: ["https://shekhai-dashboard.vercel.app"], // allow frontend
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  credentials: true
-}));
+
+// CORS configuration
+const corsOptions = {
+  origin: [
+    "http://localhost:5173", // local frontend
+    "https://shekhai-dashboard.vercel.app", // deployed frontend
+  ],
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true,
+};
+
+app.use(cors(corsOptions));
 
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
@@ -45,11 +53,18 @@ app.use(
           "'self'",
           "data:",
           "blob:",
-          "*", // allow all origins for images (or specify your frontend if you want stricter)
+          "https://shekhai-server.up.railway.app", // allow your server
+          "http://localhost:5173", // allow local frontend
+          "https://shekhai-dashboard.vercel.app", // allow deployed frontend
         ],
         scriptSrc: ["'self'", "'unsafe-inline'"],
         styleSrc: ["'self'", "'unsafe-inline'"],
-        connectSrc: ["'self'", "https://shekhai-server.up.railway.app"],
+        connectSrc: [
+          "'self'",
+          "https://shekhai-server.up.railway.app",
+          "http://localhost:5173",
+          "https://shekhai-dashboard.vercel.app",
+        ],
         fontSrc: ["'self'", "https://fonts.gstatic.com"],
         objectSrc: ["'none'"],
       },
