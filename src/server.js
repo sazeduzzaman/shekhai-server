@@ -19,7 +19,11 @@ app.use(
         defaultSrc: ["'self'"],
         scriptSrc: ["'self'"],
         styleSrc: ["'self'", "'unsafe-inline'"],
-        imgSrc: ["'self'", "data:", "https://shekhai-server.up.railway.app"],
+        imgSrc: [
+          "'self'",
+          "data:",
+          "https://shekhai-server.up.railway.app", // allow uploaded images
+        ],
         connectSrc: ["'self'"],
         fontSrc: ["'self'", "https://fonts.gstatic.com"],
         objectSrc: ["'none'"],
@@ -39,9 +43,13 @@ app.use(express.urlencoded({ extended: true }));
 app.use(morgan("dev"));
 
 // ---------------------------
-// 3️⃣ Serve static uploads
+// 3️⃣ Serve static uploads with CORS
 // ---------------------------
-app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
+app.use(
+  "/uploads",
+  cors({ origin: "*" }), // allow cross-origin requests for images
+  express.static(path.join(process.cwd(), "uploads"))
+);
 
 // ---------------------------
 // 4️⃣ Connect database
